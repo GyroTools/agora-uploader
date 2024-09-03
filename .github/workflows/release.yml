@@ -35,7 +35,8 @@ jobs:
           goversion: "https://dl.google.com/go/go1.21.0.linux-amd64.tar.gz"
           project_path: "./"
           binary_name: "agora-uploader"
-          extra_files: LICENSE README.md          
+          extra_files: LICENSE README.md  
+          md5sum: FALSE
           build_flags: -v
           ldflags: -X "main.appVersion=${{ env.APP_VERSION }}" -X "main.buildTime=${{ env.BUILD_TIME }}" -X main.gitCommit=${{ github.sha }} -X main.gitRef=${{ github.ref }}
    
