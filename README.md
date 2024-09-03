@@ -8,7 +8,7 @@ The latest release of the agora-uploader can be found [here](https://github.com/
 The agora-uploader can upload a file or an entire folder from the command line with the following syntax:
 
 ```
-     agora-uploader --path <file_or_folder> <options>
+     agora-uploader --url <agora_server_url> --path <file_or_folder> --target-folder <target_folder_id> <options>
 ```
 
 ```
