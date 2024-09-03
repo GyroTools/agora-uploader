@@ -18,11 +18,11 @@ OPTIONS:
    -f, --target-folder    The ID of the target folder where the data is uploaded to (default: -1)
    -k, --api-key          The Agora API key used for authentication 
    --verify               Verifies if all the uploaded files were imported correctly (waits until the import is complete)
-   --extract-zip          If the uploaded file is a zip, it is extracted and its content is imported into Agora (default: false)
-   -j, --import-json      The json which will be used for the import 
+   --extract-zip          If the uploaded file is a zip, it is extracted and its content is imported into Agora (default: false)   
    --no-check-certificate Don't check the server certificate
+   --import-json          The json which will be used for the import 
    --fake                 Run the uploader without actually uploading the files (for testing and debugging) (default: false)
-   -h, --help             show help (default: false)
+   --help                 show help (default: false)
 ```
 
 ### Examples
