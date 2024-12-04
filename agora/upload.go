@@ -389,8 +389,6 @@ func zip_and_upload(fileCh chan UploadFile, request_url string, api_key string, 
 		defer file.Close()
 
 		w := zip.NewWriter(file)
-		defer w.Close()
-
 		for _, file_to_zip := range files_to_zip[index:] {
 			logrus.Debugf("adding file to zip: %s (path in zipfile: %s)", file_to_zip.SourcePath, file_to_zip.TargetPath)
 			file, err := os.Open(file_to_zip.SourcePath)
@@ -398,10 +396,13 @@ func zip_and_upload(fileCh chan UploadFile, request_url string, api_key string, 
 				logrus.Fatalf("Could not open the file %s: %v", file_to_zip.SourcePath, err)
 				return err
 			}
-			defer file.Close()
-
 			relative_path := file_to_zip.TargetPath
-			f, err := w.Create(relative_path)
+			//f, err := w.Create(relative_path)
+			// Uncompressed zips
+			f, err := w.CreateHeader(&zip.FileHeader{
+				Name:   relative_path,
+				Method: zip.Store,
+			})
 			if err != nil {
 				logrus.Fatalf("Could not create the path %s in zip: %v", relative_path, err)
 				return err
@@ -422,6 +423,7 @@ func zip_and_upload(fileCh chan UploadFile, request_url string, api_key string, 
 			}
 		}
 		w.Close()
+		file.Close()
 		upload_file := UploadFile{SourcePath: zip_path, TargetPath: zip_filename, Delete: true}
 		fileCh <- upload_file
 	}
