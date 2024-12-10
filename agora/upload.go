@@ -585,6 +585,8 @@ func update_import_state(files []UploadFile, agora_url string, importPackageId i
 					file.Imported = true
 					status = "IMPORTED:"
 					//statusColor = color.New(color.FgGreen).SprintFunc()
+				} else {
+					fmt.Println(localSha1)
 				}
 				logrus.Infof("%s %s\t", status, file.SourcePath)
 				break
@@ -629,7 +631,7 @@ func upload(agora_url string, api_key string, input_files []string, target_folde
 		go upload_worker(fileCh, request_url, api_key, fake, wg)
 	}
 
-	temp_dir, err := ioutil.TempDir("", "agora_app")
+	temp_dir, err := os.MkdirTemp("", "agora_app")
 	defer os.RemoveAll(temp_dir)
 	if err != nil {
 		return UploadProgress{}, err

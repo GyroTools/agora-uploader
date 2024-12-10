@@ -3,7 +3,10 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math"
+	"math/rand"
 	"os"
+	"path/filepath"
 	"strings"
 	"syscall"
 
@@ -19,6 +22,74 @@ var appVersion = "0.0.1"
 var buildTime = "N.A."
 var gitCommit = "N.A."
 var gitRef = "N.A."
+
+// generateRandomFiles generates files with random sizes in a temporary directory.
+// numFiles: number of files to generate. If numFiles > 0, the total size is split into numFiles.
+// totalSize: total size of all files in bytes.
+func generateRandomFiles(numFiles int, totalSize int64, maxFileSize int64) (string, error) {
+	// Create a temporary directory
+	tempDir, err := os.MkdirTemp("", "random_files")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temp directory: %v", err)
+	}
+
+	if maxFileSize <= 0 {
+		maxFileSize = totalSize
+	}
+
+	if numFiles > 0 {
+		// Fixed number of files
+		fileSize := totalSize / int64(numFiles)
+		for i := 0; i < numFiles; i++ {
+			size := fileSize
+			if i == numFiles-1 {
+				size = totalSize - fileSize*int64(numFiles-1)
+			}
+			err := createRandomFile(tempDir, size, i)
+			if err != nil {
+				return "", err
+			}
+		}
+	} else {
+		// Arbitrary number of files
+		var generatedSize int64
+		fileIndex := 0
+		for generatedSize < totalSize {
+			size := rand.Int63n(int64(math.Min(float64(maxFileSize), float64(totalSize-generatedSize)))) + 1
+			err := createRandomFile(tempDir, size, fileIndex)
+			if err != nil {
+				return "", err
+			}
+			generatedSize += size
+			fileIndex++
+		}
+	}
+
+	return tempDir, nil
+}
+
+// createRandomFile creates a file with random content of the specified size.
+func createRandomFile(dir string, size int64, index int) error {
+	filePath := filepath.Join(dir, fmt.Sprintf("file_%d", index))
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %v", err)
+	}
+	defer file.Close()
+
+	data := make([]byte, size)
+	_, err = rand.Read(data)
+	if err != nil {
+		return fmt.Errorf("failed to generate random data: %v", err)
+	}
+
+	_, err = file.Write(data)
+	if err != nil {
+		return fmt.Errorf("failed to write data to file: %v", err)
+	}
+
+	return nil
+}
 
 func credentials() (string, string, error) {
 	reader := bufio.NewReader(os.Stdin)
@@ -50,6 +121,18 @@ func getAgoraApiKey(agora_url string) string {
 }
 
 func Upload(c *cli.Context) error {
+	if !c.IsSet("path") && !c.IsSet("test") {
+		logrus.Fatal("Error: Either the --path or --test flag must be provided.")
+	}
+
+	if c.Bool("test") {
+		tempDir, err := generateRandomFiles(c.Int("test-files"), int64(c.Int("test-size"))*1024*1024, int64(c.Int("test-max-file-size"))*1024*1024)
+		if err != nil {
+			logrus.Fatal(err)
+		}
+		c.Set("path", tempDir)
+		defer os.RemoveAll(tempDir)
+	}
 	agora.HandleNoCertificateCheck(c.Bool("no-check-certificate"))
 	api_key := c.String("api-key")
 	if api_key == "" {
@@ -72,11 +155,10 @@ func main() {
 			Required: true,
 		},
 		&cli.StringFlag{
-			Name:     "path",
-			Aliases:  []string{"p"},
-			Value:    "",
-			Usage:    "The path to a file or folder to be uploaded",
-			Required: true,
+			Name:    "path",
+			Aliases: []string{"p"},
+			Value:   "",
+			Usage:   "The path to a file or folder to be uploaded",
 		},
 		&cli.IntFlag{
 			Name:     "target-folder",
@@ -112,6 +194,24 @@ func main() {
 		&cli.BoolFlag{
 			Name:  "fake",
 			Usage: "Run the uploader without actually uploading the files (for testing and debugging)",
+		},
+		&cli.BoolFlag{
+			Name:  "test",
+			Usage: "Creates random files and uploads them to the Agora server",
+		},
+		&cli.IntFlag{
+			Name:  "test-size",
+			Value: 1024,
+			Usage: "The total size of the random files in megabytes",
+		},
+		&cli.IntFlag{
+			Name:  "test-files",
+			Value: -1,
+			Usage: "The number of random files to generate. -1 means arbitrary number of files",
+		}, &cli.IntFlag{
+			Name:  "test-max-file-size",
+			Value: -1,
+			Usage: "The maximum size of a random file in megabytes",
 		},
 	}
 
