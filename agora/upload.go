@@ -23,6 +23,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	agoraConn "github.com/GyroTools/gtagora-connector-go/agora"
+	agoraModels "github.com/GyroTools/gtagora-connector-go/agora/models"
 )
 
 var UPLOAD_CHUCK_SIZE int64 = 100 * 1024 * 1024
@@ -713,5 +716,58 @@ func Upload(agora_url string, api_key string, file_or_dir string, target_folder_
 
 	input_files := []string{file_or_dir}
 	logrus.Debugf("Starting upload of %s to %s", file_or_dir, agora_url)
-	return upload(agora_url, api_key, input_files, target_folder_id, -1, -1, -1, json_import_file, wait, timeout, extract_zip, verify, fake)
+
+	agora, err := agoraConn.Create(agora_url, api_key, false)
+	if err != nil {
+		return UploadProgress{}, err
+	}
+
+	importPackage, err := agora.NewImportPackage()
+	if err != nil {
+		return UploadProgress{}, err
+	}
+	agoraProgressChan := make(chan agoraModels.UploadProgress)
+	go func() {
+		// this function receives the progress from the agora interface and passes it on to the gtPacknGo progress struct
+		for prog := range agoraProgressChan {
+			if prog.Type == agoraModels.TypeUploadStarted {
+				logrus.Info("Preparing Data:")
+				logrus.Info("-----------------")
+			}
+			if prog.Type == agoraModels.TypeUploadInitialized {
+				if initData, ok := prog.Data.(agoraModels.UploadProgressInitData); ok {
+					logrus.Infof("Found %d files larger than %dMB which will be uploaded directly", initData.FilesToUpload, agoraModels.UPLOAD_CHUCK_SIZE/1024/1024)
+					logrus.Infof("Found %d files which will be zipped and uploaded", initData.FilesToZip)
+					logrus.Info("\nUploading Data:")
+					logrus.Info("-----------------")
+				}
+
+			}
+			if prog.Type == agoraModels.TypeFileUploadStarted {
+				if fileData, ok := prog.Data.(agoraModels.UploadFile); ok {
+					logrus.Infof("Uploading file: %s", fileData.TargetPath)
+				}
+			}
+		}
+	}()
+	uploadFiles := make([]agoraModels.UploadFile, 0)
+	for _, file := range input_files {
+		uploadFiles = append(uploadFiles, agoraModels.NewUploadFile(file, nil))
+	}
+	err = importPackage.Upload(uploadFiles, agoraProgressChan)
+	if err != nil {
+		return UploadProgress{}, err
+	}
+	var wg sync.WaitGroup
+	wg.Add(1)
+	if json_import_file != "" {
+		json_import_file = filepath.Base(json_import_file)
+	}
+	err = importPackage.Complete(target_folder_id, json_import_file, false, &wg)
+	if err != nil {
+		return UploadProgress{}, err
+	}
+	wg.Wait()
+	close(agoraProgressChan)
+	return UploadProgress{}, nil
 }
