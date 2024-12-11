@@ -138,7 +138,7 @@ func Upload(c *cli.Context) error {
 	if api_key == "" {
 		api_key = getAgoraApiKey(c.String("url"))
 	}
-	_, err := agora.Upload(c.String("url"), api_key, c.String("path"), c.Int("target-folder"), c.Bool("extract-zip"), c.String("import-json"), true, -1, c.Bool("verify"), c.Bool("fake"))
+	err := agora.Upload(c.String("url"), api_key, c.String("path"), c.Int("target-folder"), c.Bool("extract-zip"), c.String("import-json"), true, -1, c.Bool("verify"), c.Bool("fake"))
 	if err != nil {
 		logrus.Fatal(err)
 	}
