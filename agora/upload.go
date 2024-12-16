@@ -149,11 +149,6 @@ func printReport(result *agoraModels.ImportResult) {
 	logrus.Info("--------------")
 	logrus.Infof("Total Files : %d", result.NrFiles)
 	logrus.Infof("Uploaded    : %d", result.NrUploaded)
-	if result.NrUploadFailed > 0 || result.NrUploadHashFailed > 0 {
-		logrus.Infof("\033[31mFailed      : %d\033[0m", result.NrUploadFailed+result.NrUploadHashFailed)
-	} else {
-		logrus.Infof("Failed      : %d", result.NrUploadFailed+result.NrUploadHashFailed)
-	}
 	if result.Datafiles != nil {
 		logrus.Infof("Imported    : %d", result.NrImported)
 		logrus.Infof("Existed     : %d", result.NrExisted)
@@ -168,13 +163,6 @@ func printReport(result *agoraModels.ImportResult) {
 		logrus.Info(" ")
 		logrus.Errorf("%d files failed to upload:", result.NrUploadFailed)
 		for _, file := range result.UploadFailed {
-			logrus.Errorf("  - %s", file)
-		}
-	}
-	if result.NrUploadHashFailed > 0 {
-		logrus.Info(" ")
-		logrus.Errorf("%d files were uploaded but the hash verification failed:", result.NrUploadHashFailed)
-		for _, file := range result.UploadHashFailed {
 			logrus.Errorf("  - %s", file)
 		}
 	}
