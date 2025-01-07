@@ -264,9 +264,6 @@ func Upload(agora_url string, api_key string, file_or_dir string, target_folder_
 	if err != nil {
 		return err
 	}
-	if json_import_file != "" {
-		json_import_file = filepath.Base(json_import_file)
-	}
 	close(agoraProgressChan)
 	wgUpload.Wait()
 	logrus.Info("Finalizing Uploads")
