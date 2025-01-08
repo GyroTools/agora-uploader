@@ -153,7 +153,11 @@ func printReport(result *agoraModels.ImportResult) {
 		logrus.Infof("Imported    : %d", result.NrImported)
 		logrus.Infof("Existed     : %d", result.NrExisted)
 		if result.NrIgnored > 0 {
-			logrus.Infof("\033[33;1mIgnored     : %d\033[0m", result.NrIgnored)
+			if result.Tasks.Error == 0 {
+				logrus.Infof("\033[33;1mIgnored     : %d\033[0m", result.NrIgnored)
+			} else {
+				logrus.Infof("\033[31;1mFailed      : %d\033[0m", result.NrIgnored)
+			}
 		} else {
 			logrus.Infof("Ignored     : %d", result.NrIgnored)
 		}
@@ -174,10 +178,18 @@ func printReport(result *agoraModels.ImportResult) {
 		}
 	}
 	if result.NrIgnored > 0 {
-		logrus.Info(" ")
-		logrus.Warningf("%d files were ignored during the import. This is most likely not an error", result.NrIgnored)
-		for _, file := range result.Ignored {
-			logrus.Warningf("  - %s", file)
+		if result.Tasks.Error == 0 {
+			logrus.Info(" ")
+			logrus.Warningf("%d files were ignored during the import. This is most likely not an error", result.NrIgnored)
+			for _, file := range result.Ignored {
+				logrus.Warningf("  - %s", file)
+			}
+		} else {
+			logrus.Info(" ")
+			logrus.Errorf("%d files were not imported", result.NrIgnored)
+			for _, file := range result.Ignored {
+				logrus.Errorf("  - %s", file)
+			}
 		}
 	}
 	if result.NrHashFailed > 0 {
