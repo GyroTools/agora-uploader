@@ -126,7 +126,7 @@ func Upload(c *cli.Context) error {
 	}
 
 	if c.Bool("test") {
-		tempDir, err := generateRandomFiles(c.Int("test-files"), int64(c.Int("test-size"))*1024*1024, int64(c.Int("test-max-file-size"))*1024*1024)
+		tempDir, err := generateRandomFiles(c.Int("test-files"), int64(c.Int("test-size"))*1024*1024, c.Int64("test-max-file-size"))
 		if err != nil {
 			logrus.Fatal(err)
 		}

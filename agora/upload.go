@@ -2,6 +2,7 @@ package agora
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -19,12 +20,31 @@ type CLIProgressHandler struct {
 	tracker map[string]*progress.Tracker
 }
 
+func HandleResultProgress(progressChan <-chan agoraModels.UploadProgress, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for prog := range progressChan {
+		if prog.Type == agoraModels.TypeResultProgress {
+			if importProgress, ok := prog.Data.(agoraModels.ResultProgress); ok {
+				fmt.Printf("\rVerifying Uploaded Files: %d/%d", importProgress.NrProcessed, importProgress.NrFiles)
+			}
+		}
+	}
+	logrus.Info(" ")
+}
+
 func (c *CLIProgressHandler) HandleImportProgress(progressChan <-chan agoraModels.UploadProgress, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for prog := range progressChan {
 		if prog.Type == agoraModels.TypeImportProgress {
-			if importProgress, ok := prog.Data.(int); ok {
-				c.tracker["import"].SetValue(int64(importProgress))
+			if importProgress, ok := prog.Data.(agoraModels.ImportProgress); ok {
+				if importProgress.State == agoraModels.STATE_ANALYZING && c.tracker["import"].Message != "Analysing Files" {
+					c.tracker["import"].UpdateMessage("Analysing Files")
+				} else if importProgress.State == agoraModels.STATE_IMPORTING && c.tracker["import"].Message != "Import" {
+					c.tracker["import"].UpdateMessage("Import")
+				}
+				if importProgress.State == agoraModels.STATE_IMPORTING {
+					c.tracker["import"].SetValue(int64(importProgress.Progress))
+				}
 			}
 		}
 	}
@@ -144,8 +164,39 @@ type DataFile struct {
 	Sha1 string `json:"sha1"`
 }
 
+func prettyPrintSize(size int64) string {
+	const (
+		_          = iota
+		KB float64 = 1 << (10 * iota)
+		MB
+		GB
+		TB
+		PB
+		EB
+	)
+
+	var result string
+	switch {
+	case size >= int64(EB):
+		result = fmt.Sprintf("%.2f EB", float64(size)/EB)
+	case size >= int64(PB):
+		result = fmt.Sprintf("%.2f PB", float64(size)/PB)
+	case size >= int64(TB):
+		result = fmt.Sprintf("%.2f TB", float64(size)/TB)
+	case size >= int64(GB):
+		result = fmt.Sprintf("%.2f GB", float64(size)/GB)
+	case size >= int64(MB):
+		result = fmt.Sprintf("%.2f MB", float64(size)/MB)
+	case size >= int64(KB):
+		result = fmt.Sprintf("%.2f KB", float64(size)/KB)
+	default:
+		result = fmt.Sprintf("%d B", size)
+	}
+	return result
+}
+
 func printReport(result *agoraModels.ImportResult) {
-	logrus.Info("\nImport Result:")
+	logrus.Info("\n\nImport Result:")
 	logrus.Info("--------------")
 	logrus.Infof("Total Files : %d", result.NrFiles)
 	logrus.Infof("Uploaded    : %d", result.NrUploaded)
@@ -250,8 +301,11 @@ func Upload(agora_url string, api_key string, file_or_dir string, target_folder_
 		for prog := range agoraProgressChan {
 			if prog.Type == agoraModels.TypeUploadInitialized {
 				if initData, ok := prog.Data.(agoraModels.UploadProgressInitData); ok {
+					logrus.Infof("Import Session: %d", importPackage.Id)
+					logrus.Info("----------------------")
 					logrus.Infof("%d files will be uploaded directly", initData.FilesToUpload)
-					logrus.Infof("%d files which will be zipped and uploaded", initData.FilesToZip)
+					logrus.Infof("%d files will be zipped and uploaded", initData.FilesToZip)
+					logrus.Infof("Total Size: %s", prettyPrintSize(initData.TotalSize))
 					logrus.Info("\nUploading Data:")
 					logrus.Info("-----------------")
 
@@ -310,10 +364,17 @@ func Upload(agora_url string, api_key string, file_or_dir string, target_folder_
 		close(importProgressChan)
 		wgImportProgress.Wait()
 	}
-	result, err := importPackage.Result()
+	var wgResultProgress sync.WaitGroup
+	wgResultProgress.Add(1)
+	resultProgressChan := make(chan agoraModels.UploadProgress)
+	go HandleResultProgress(resultProgressChan, &wgResultProgress)
+	logrus.Info(" ")
+
+	result, err := importPackage.Result(resultProgressChan)
 	if err != nil {
 		return err
 	}
+	wgResultProgress.Wait()
 	printReport(result)
 	return nil
 }
