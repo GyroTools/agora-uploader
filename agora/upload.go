@@ -374,6 +374,7 @@ func Upload(agora_url string, api_key string, file_or_dir string, target_folder_
 	if err != nil {
 		return err
 	}
+	close(resultProgressChan)
 	wgResultProgress.Wait()
 	printReport(result)
 	return nil
