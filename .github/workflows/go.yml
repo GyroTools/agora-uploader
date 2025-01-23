@@ -38,7 +38,7 @@ jobs:
       run: echo GOBIN=$(go env GOPATH) >> ${GITHUB_ENV} 
           
     - name: Upload Build Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         # Artifact name        
         name: agora-uploader-${{ matrix.goos }}
