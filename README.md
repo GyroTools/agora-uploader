@@ -16,13 +16,20 @@ OPTIONS:
    -u, --url              The URL of the Agora server
    -p, --path             The path to a file or folder to be uploaded
    -f, --target-folder    The ID of the target folder where the data is uploaded to (default: -1)
-   -k, --api-key          The Agora API key used for authentication 
-   --verify               Verifies if all the uploaded files were imported correctly (waits until the import is complete)
-   --extract-zip          If the uploaded file is a zip, it is extracted and its content is imported into Agora (default: false)   
-   --no-check-certificate Don't check the server certificate
-   --import-json          The json which will be used for the import 
+   -k, --api-key          The Agora API key used for authentication
+   -j, --import-json      The json which will be used for the import
+   -h --help              show help (default: false)
+   --extract-zip          If the uploaded file is a zip, it is extracted and its content is imported into Agora (default: false)
+   --no-verify            Will not verify if all the uploaded files were correctly imported (default: false)   
+   --no-check-certificate Don't check the server's ssl certificate (default: false)
    --fake                 Run the uploader without actually uploading the files (for testing and debugging) (default: false)
-   --help                 show help (default: false)
+   --test                 Creates random files and uploads them to the Agora server (default: false)
+   --test-size value      The total size of the random files in megabytes (default: 1024)
+   --test-files value     The number of random files to generate. -1 means arbitrary number of files (default: -1)
+   --test-max-file-size   The maximum size of a random file in megabytes (default: -1)
+   --verbose              Verbose mode, print processing details (default: false) 
+   --log-format           Choose log format (options: runner, text, json) 
+   --log-level            Log level (options: debug, info, warn, error, fatal, panic)   
 ```
 
 ### Examples
@@ -37,9 +44,9 @@ OPTIONS:
           agora-uploader -u https://my-agora.gyrotools.com -p /data/ -f 13 --api-key 8be8b7bd-5007-4af9-95fa-4c491566d40a
      ```
 
-3. Upload a folder and verify that all uploaded files have been imported
+3. Upload a folder and skip the import verification
      ```
-          agora-uploader --url https://my-agora.gyrotools.com --path /data/ --target-folder 13 --verify
+          agora-uploader --url https://my-agora.gyrotools.com --path /data/ --target-folder 13 --no-verify
      ```
 
 4. Upload a .zip file and import its content
