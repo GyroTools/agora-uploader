@@ -3,7 +3,7 @@ module agora-uploader
 go 1.17
 
 require (
-	github.com/GyroTools/gtagora-connector-go v0.2.10
+	github.com/GyroTools/gtagora-connector-go v0.2.11
 	github.com/jedib0t/go-pretty/v6 v6.6.4
 	github.com/sirupsen/logrus v1.8.1
 	github.com/urfave/cli/v2 v2.3.0

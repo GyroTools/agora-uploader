@@ -138,7 +138,8 @@ func Upload(c *cli.Context) error {
 	if api_key == "" {
 		api_key = getAgoraApiKey(c.String("url"))
 	}
-	err := agora.Upload(c.String("url"), api_key, c.String("path"), c.Int("target-folder"), c.Bool("extract-zip"), c.String("import-json"), true, -1, !c.Bool("no-verify"), c.Bool("fake"))
+	uploadChunkSize := int64(c.Int("upload-chunk-size")) * 1024 * 1024 // Convert to bytes
+	err := agora.Upload(c.String("url"), api_key, c.String("path"), c.Int("target-folder"), c.Bool("extract-zip"), c.String("import-json"), true, -1, !c.Bool("no-verify"), c.Bool("fake"), uploadChunkSize)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -190,6 +191,11 @@ func main() {
 		&cli.BoolFlag{
 			Name:  "no-check-certificate",
 			Usage: "Don't check the server certificate",
+		},
+		&cli.IntFlag{
+			Name:  "upload-chunk-size",
+			Value: 100,
+			Usage: "The size of the upload chunk in megabytes (default: 100)",
 		},
 		&cli.BoolFlag{
 			Name:  "fake",

@@ -261,7 +261,7 @@ func printReport(result *agoraModels.ImportResult) {
 	}
 }
 
-func Upload(agora_url string, api_key string, file_or_dir string, target_folder_id int, extract_zip bool, json_import_file string, wait bool, timeout int, verify bool, fake bool) error {
+func Upload(agora_url string, api_key string, file_or_dir string, target_folder_id int, extract_zip bool, json_import_file string, wait bool, timeout int, verify bool, fake bool, uploadChunkSize int64) error {
 	if extract_zip {
 		fileInfo, err := os.Stat(file_or_dir)
 		if err == nil {
@@ -292,6 +292,7 @@ func Upload(agora_url string, api_key string, file_or_dir string, target_folder_
 	if err != nil {
 		return err
 	}
+	importPackage.SetUploadChunkSize(uploadChunkSize)
 
 	var wgUpload sync.WaitGroup
 	wgUpload.Add(1)
