@@ -293,6 +293,7 @@ func Upload(agora_url string, api_key string, file_or_dir string, target_folder_
 		return err
 	}
 	importPackage.SetUploadChunkSize(uploadChunkSize)
+	importPackage.SetTimeout(time.Duration(timeout) * time.Minute)
 
 	var wgUpload sync.WaitGroup
 	wgUpload.Add(1)
@@ -357,7 +358,7 @@ func Upload(agora_url string, api_key string, file_or_dir string, target_folder_
 		go importProgressHandler.HandleImportProgress(importProgressChan, &wgImportProgress)
 
 		// query the progress of the import
-		err = importPackage.WaitForImport(time.Duration(90)*time.Minute, importProgressChan)
+		err = importPackage.WaitForImport(importProgressChan)
 		if err != nil {
 			return err
 		}

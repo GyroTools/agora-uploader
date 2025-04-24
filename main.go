@@ -139,7 +139,8 @@ func Upload(c *cli.Context) error {
 		api_key = getAgoraApiKey(c.String("url"))
 	}
 	uploadChunkSize := int64(c.Int("upload-chunk-size")) * 1024 * 1024 // Convert to bytes
-	err := agora.Upload(c.String("url"), api_key, c.String("path"), c.Int("target-folder"), c.Bool("extract-zip"), c.String("import-json"), true, -1, !c.Bool("no-verify"), c.Bool("fake"), uploadChunkSize)
+	timeout := c.Int("timeout")
+	err := agora.Upload(c.String("url"), api_key, c.String("path"), c.Int("target-folder"), c.Bool("extract-zip"), c.String("import-json"), true, timeout, !c.Bool("no-verify"), c.Bool("fake"), uploadChunkSize)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -196,6 +197,11 @@ func main() {
 			Name:  "upload-chunk-size",
 			Value: 100,
 			Usage: "The size of the upload chunk in megabytes (default: 100)",
+		},
+		&cli.IntFlag{
+			Name:  "timeout",
+			Value: 60,
+			Usage: "The timeout in minutes. The uploader will exit if the upload or import takes longer than this time (default: 60)",
 		},
 		&cli.BoolFlag{
 			Name:  "fake",
